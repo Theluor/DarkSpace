@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Space</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+
+<button id="startButton" style="position: absolute; z-index: 10;">Commencer le jeu</button>
+<canvas id="gameCanvas" width="800" height="600" style="background-color: black;"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 15,
+        color: 'white',
+        velocity: 5
+    };
+
+    const obstacles = [];
+    let score = 0;
+
+    function drawPlayer() {
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+        ctx.fillStyle = player.color;
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function drawObstacles() {
+        for (let obstacle of obstacles) {
+            ctx.beginPath();
+            ctx.rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            ctx.fillStyle = obstacle.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+    }
+
+    function updateGameArea() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (cursors.left && player.x - player.radius > 0) player.x -= player.velocity;
+        if (cursors.right && player.x + player.radius < canvas.width) player.x += player.velocity;
+        if (cursors.up && player.y - player.radius > 0) player.y -= player.velocity;
+        if (cursors.down && player.y + player.radius < canvas.height) player.y += player.velocity;
+
+        // Mettre à jour les obstacles
+        for (let obstacle of obstacles) {
+            obstacle.y += obstacle.velocity;
+        }
+
+        // Supprimer les obstacles qui sont hors de l'écran
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            if (obstacles[i].y > canvas.height) {
+                obstacles.splice(i, 1);
+            }
+        }
+
+        // Ajouter de nouveaux obstacles
+        if (Math.random() < 0.02) {  // 2% de chance par frame d'ajouter un obstacle
+            let obstacleWidth = Math.random() * 100 + 50;
+            let obstacleX = Math.random() * (canvas.width - obstacleWidth);
+            obstacles.push({
+                x: obstacleX,
+                y: 0,
+                width: obstacleWidth,
+                height: 20,
+                color: 'red',
+                velocity: 2
+            });
+        }
+
+        drawObstacles();
+        drawPlayer();
+
+        // Vérifier les collisions
+        for (let obstacle of obstacles) {
+            if (player.x + player.radius > obstacle.x &&
+                player.x - player.radius < obstacle.x + obstacle.width &&
+                player.y + player.radius > obstacle.y &&
+                player.y - player.radius < obstacle.y + obstacle.height) {
+                    // Collision!
+                    endGame();
+                    return;
+            }
+        }
+
+        score += 0.1;
+        ctx.fillStyle = "white";
+        ctx.font = "24px Arial";
+        ctx.fillText("Score: " + Math.floor(score), 10, 30);
+
+        requestAnimationFrame(updateGameArea);
+    }
+
+    function endGame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "48px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Game Over!", canvas.width/2, canvas.height/2);
+    }
+
+    const cursors = {
+        left: false,
+        right: false,
+        up: false,
+        down: false
+    };
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') cursors.left = true;
+        if (e.key === 'ArrowRight') cursors.right = true;
+        if (e.key === 'ArrowUp') cursors.up = true;
+        if (e.key === 'ArrowDown') cursors.down = true;
+    });
+
+    document.addEventListener('keyup', function(e) {
+        if (e.key === 'ArrowLeft') cursors.left = false;
+        if (e.key === 'ArrowRight') cursors.right = false;
+        if (e.key === 'ArrowUp') cursors.up = false;
+        if (e.key === 'ArrowDown') cursors.down = false;
+    });
+
+    function playMusic() {
+        const audio = new Audio('fondMusical.mp3');
+        audio.loop = true;
+        audio.play();
+    }
+
+    document.getElementById('startButton').addEventListener('click', function() {
+        playMusic();
+        updateGameArea();
+        this.style.display = 'none';
+    });
+</script>
+</body>
+</html>
